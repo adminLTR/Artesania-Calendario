@@ -1,0 +1,45 @@
+services:
+  # Base de datos MySQL
+  - type: pserv
+    name: taller-mysql
+    env: docker
+    region: oregon
+    plan: standard
+    dockerfilePath: ./Dockerfile.mysql
+    envVars:
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+      - key: MYSQL_DATABASE
+        value: taller_db
+
+  # Aplicación Web
+  - type: web
+    name: taller-app
+    env: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromService:
+          type: pserv
+          name: taller-mysql
+          property: host
+      - key: DB_PORT
+        value: 3306
+      - key: DB_USER
+        value: root
+      - key: DB_PASSWORD
+        fromService:
+          type: pserv
+          name: taller-mysql
+          envVarKey: MYSQL_ROOT_PASSWORD
+      - key: DB_NAME
+        value: taller_db
+      - key: DATABASE_URL
+        sync: false
