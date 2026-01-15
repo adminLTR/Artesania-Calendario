@@ -1,0 +1,200 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo de Estudiante
+model Student {
+  id                String             @id @default(uuid())
+  name              String             @db.VarChar(255)
+  phone             String             @db.VarChar(50)
+  classesRemaining  Int                @default(0)
+  status            StudentStatus      @default(new)
+  paymentMethod     String?            @db.VarChar(100)
+  notes             String?            @db.Text
+  price             Decimal?           @db.Decimal(10, 2)
+  classType         String?            @db.VarChar(100)
+  expiryDate        DateTime?          @db.Date
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  // Relaciones
+  assignedClasses   AssignedClass[]
+  attendanceRecords AttendanceRecord[]
+  pieces            CeramicPiece[]
+  sessionStudents   SessionStudent[]
+
+  @@index([status])
+  @@index([name])
+  @@map("students")
+}
+
+enum StudentStatus {
+  regular
+  needs_renewal
+  new
+}
+
+// Clases asignadas a estudiantes
+model AssignedClass {
+  id        Int      @id @default(autoincrement())
+  studentId String
+  date      DateTime @db.Date
+  startTime String   @db.VarChar(10)
+  endTime   String   @db.VarChar(10)
+  createdAt DateTime @default(now())
+  
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([date])
+  @@map("assigned_classes")
+}
+
+// Sesiones de clase
+model ClassSession {
+  id                  String              @id @default(uuid())
+  date                DateTime            @db.Date
+  startTime           String              @db.VarChar(10)
+  endTime             String              @db.VarChar(10)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  
+  // Relaciones
+  sessionStudents     SessionStudent[]
+  attendanceRecords   AttendanceRecord[]
+
+  @@index([date])
+  @@map("class_sessions")
+}
+
+// Relación entre sesiones y estudiantes
+model SessionStudent {
+  id               Int              @id @default(autoincrement())
+  sessionId        String
+  studentId        String
+  studentName      String           @db.VarChar(255)
+  attendanceStatus AttendanceStatus @default(none)
+  
+  session          ClassSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student          Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@index([studentId])
+  @@map("session_students")
+}
+
+enum AttendanceStatus {
+  none
+  present
+  absent
+}
+
+// Historial de asistencias
+model AttendanceRecord {
+  id        Int              @id @default(autoincrement())
+  studentId String
+  sessionId String
+  date      DateTime         @db.Date
+  status    AttendanceType
+  createdAt DateTime         @default(now())
+  
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session   ClassSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, sessionId])
+  @@index([studentId])
+  @@index([date])
+  @@map("attendance_history")
+}
+
+enum AttendanceType {
+  present
+  absent
+}
+
+// Piezas cerámicas
+model CeramicPiece {
+  id               String              @id @default(uuid())
+  alumnoId         String?
+  owner            String              @db.VarChar(255)
+  description      String?             @db.Text
+  status           PieceStatus         @default(creada)
+  fechaCreacion    DateTime            @db.Date
+  fechaConclusion  DateTime?           @db.Date
+  glazeType        String?             @db.VarChar(100)
+  deliveryDate     DateTime?           @db.Date
+  notes            String?             @db.Text
+  extraCommentary  String?             @db.Text
+  tecnica          String?             @db.VarChar(100)
+  hornoId          String?             @db.VarChar(100)
+  lote             String?             @db.VarChar(100)
+  foto             String?             @db.Text
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  
+  student          Student?            @relation(fields: [alumnoId], references: [id], onDelete: SetNull)
+
+  @@index([alumnoId])
+  @@index([status])
+  @@map("ceramic_pieces")
+}
+
+enum PieceStatus {
+  creada
+  en_secado
+  bizcochada
+  esmaltada
+  cocida_final
+  concluida
+}
+
+// Gift Cards
+// Clientes (compradores y destinatarios de gift cards)
+model Client {
+  id                  String      @id @default(uuid())
+  name                String      @db.VarChar(255)
+  phone               String?     @db.VarChar(50)
+  email               String?     @db.VarChar(255)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  
+  // Relaciones
+  giftCardsBuyer      GiftCard[]  @relation("BuyerCards")
+  giftCardsRecipient  GiftCard[]  @relation("RecipientCards")
+
+  @@index([name])
+  @@map("clients")
+}
+
+model GiftCard {
+  id               String        @id @default(uuid())
+  buyerId          String
+  recipientId      String
+  numClasses       Int
+  type             GiftCardType
+  scheduledDate    DateTime?     @db.Date
+  createdAtGift    DateTime      @default(now())
+  extraCommentary  String?       @db.Text
+  
+  // Relaciones
+  buyer            Client        @relation("BuyerCards", fields: [buyerId], references: [id], onDelete: Restrict)
+  recipient        Client        @relation("RecipientCards", fields: [recipientId], references: [id], onDelete: Restrict)
+  
+  @@index([type])
+  @@index([buyerId])
+  @@index([recipientId])
+  @@map("gift_cards")
+}
+
+enum GiftCardType {
+  modelado
+  torno
+}
