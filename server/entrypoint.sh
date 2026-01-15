@@ -1,84 +1,84 @@
 #!/bin/sh
 set -e
 
-echo "ðŸ”„ Iniciando entrypoint de Prisma..."
+echo "Ã°Å¸â€â€ž Iniciando entrypoint de Prisma..."
 
 cd /app/server
 
-# Verificar conexiÃ³n a la base de datos usando netcat
-echo "â³ Esperando conexiÃ³n a MySQL..."
+# Verificar conexiÃƒÂ³n a la base de datos usando netcat
+echo "Ã¢ÂÂ³ Esperando conexiÃƒÂ³n a PostgreSQL..."
 
 # Extraer host y puerto del DATABASE_URL
 DB_HOST=$(echo $DATABASE_URL | sed -n 's/.*@\([^:]*\):.*/\1/p')
 DB_PORT=$(echo $DATABASE_URL | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
 
-echo "ðŸ“¡ Verificando $DB_HOST:$DB_PORT..."
+echo "Ã°Å¸â€œÂ¡ Verificando $DB_HOST:$DB_PORT..."
 
 max_attempts=30
 attempt=0
 
 until nc -z $DB_HOST $DB_PORT 2>/dev/null || [ $attempt -eq $max_attempts ]; do
   attempt=$((attempt + 1))
-  echo "Intento $attempt/$max_attempts - Esperando MySQL..."
+  echo "Intento $attempt/$max_attempts - Esperando PostgreSQL..."
   sleep 2
 done
 
 if [ $attempt -eq $max_attempts ]; then
-  echo "âŒ No se pudo conectar a MySQL despuÃ©s de $max_attempts intentos"
+  echo "Ã¢ÂÅ’ No se pudo conectar a PostgreSQL despuÃƒÂ©s de $max_attempts intentos"
   exit 1
 fi
 
-echo "âœ… ConexiÃ³n TCP establecida"
+echo "Ã¢Å“â€¦ ConexiÃƒÂ³n TCP establecida"
 
-# Esperar un poco mÃ¡s para que MySQL termine de inicializar
-echo "â³ Esperando inicializaciÃ³n completa de MySQL..."
-sleep 8
+# Esperar un poco mÃƒÂ¡s para que PostgreSQL termine de inicializar
+echo "Ã¢ÂÂ³ Esperando inicializaciÃƒÂ³n completa de PostgreSQL..."
+sleep 5
 
-echo "âœ… MySQL listo"
+echo "Ã¢Å“â€¦ PostgreSQL listo"
 
 # SIEMPRE sincronizar el schema con la base de datos
-echo "ðŸ”„ Sincronizando schema con la base de datos..."
-echo "   Esto crearÃ¡ todas las tablas si no existen"
+echo "Ã°Å¸â€â€ž Sincronizando schema con la base de datos..."
+echo "   Esto crearÃƒÂ¡ todas las tablas si no existen"
 
 # Usar db push para sincronizar el schema
 # --accept-data-loss: permite cambios destructivos si es necesario
-# --skip-generate: no regenerar el client aquÃ­ (lo hacemos despuÃ©s)
+# --skip-generate: no regenerar el client aquÃƒÂ­ (lo hacemos despuÃƒÂ©s)
 if npx prisma db push --accept-data-loss --skip-generate; then
-  echo "âœ… Schema sincronizado exitosamente"
-  echo "   âœ“ Base de datos creada si no existÃ­a"
-  echo "   âœ“ Tablas creadas/actualizadas segÃºn schema.prisma"
+  echo "Ã¢Å“â€¦ Schema sincronizado exitosamente"
+  echo "   Ã¢Å“â€œ Base de datos creada si no existÃƒÂ­a"
+  echo "   Ã¢Å“â€œ Tablas creadas/actualizadas segÃƒÂºn schema.prisma"
 else
-  echo "âŒ Error al sincronizar schema"
+  echo "Ã¢ÂÅ’ Error al sincronizar schema"
   echo "   Intentando con migrate deploy..."
   
   # Como fallback, intentar con migrate deploy
   if npx prisma migrate deploy 2>/dev/null; then
-    echo "âœ… Migraciones aplicadas exitosamente"
+    echo "Ã¢Å“â€¦ Migraciones aplicadas exitosamente"
   else
-    echo "âŒ No se pudo sincronizar la base de datos"
+    echo "Ã¢ÂÅ’ No se pudo sincronizar la base de datos"
     echo "   Verifica DATABASE_URL y schema.prisma"
     exit 1
   fi
 fi
 
 # Generar Prisma Client actualizado
-echo "ðŸ”„ Generando Prisma Client..."
+echo "Ã°Å¸â€â€ž Generando Prisma Client..."
 if npx prisma generate; then
-  echo "âœ… Prisma Client generado"
+  echo "Ã¢Å“â€¦ Prisma Client generado"
 else
-  echo "âš ï¸  Advertencia: Error al generar Prisma Client"
+  echo "Ã¢Å¡Â Ã¯Â¸Â  Advertencia: Error al generar Prisma Client"
 fi
 
 # Verificar que las tablas se crearon
-echo "ðŸ” Verificando tablas en la base de datos..."
+echo "Ã°Å¸â€Â Verificando tablas en la base de datos..."
 echo "   Ejecutando: npx prisma db execute --stdin"
-echo "SHOW TABLES;" | npx prisma db execute --stdin 2>/dev/null || echo "   âš ï¸  No se pudo verificar tablas (continuando...)"
+echo "SHOW TABLES;" | npx prisma db execute --stdin 2>/dev/null || echo "   Ã¢Å¡Â Ã¯Â¸Â  No se pudo verificar tablas (continuando...)"
 
 echo ""
-echo "âœ… Prisma configurado correctamente"
-echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
-echo "ðŸš€ Iniciando servidor Express en puerto ${PORT:-5000}..."
-echo "â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”"
+echo "Ã¢Å“â€¦ Prisma configurado correctamente"
+echo "Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â"
+echo "Ã°Å¸Å¡â‚¬ Iniciando servidor Express en puerto ${PORT:-5000}..."
+echo "Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â"
 echo ""
 
 # Iniciar el servidor
