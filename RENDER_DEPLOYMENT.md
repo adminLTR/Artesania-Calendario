@@ -16,30 +16,31 @@ git push origin main
 
 ---
 
-## Paso 2: Crear Base de Datos MySQL en Render
+## Paso 2: Crear Base de Datos PostgreSQL en Render
 
 ### 2.1 Ir a Render Dashboard
 1. Visita [https://render.com](https://render.com)
 2. Crea una cuenta o inicia sesión
-3. Click en **"New +"** → **"MySQL"**
+3. Click en **"New +"** → **"PostgreSQL"**
 
-### 2.2 Configurar MySQL
-- **Name**: `taller-mysql`
+### 2.2 Configurar PostgreSQL
+- **Name**: `taller-postgres`
 - **Database**: `taller_db`
-- **User**: `root` (automático)
+- **User**: `taller_db_user` (automático)
 - **Region**: Oregon (o el más cercano)
-- **Plan**: Selecciona **Free** o **Starter** ($7/mes para 1GB)
+- **Plan**: Selecciona **Free** (90 días gratis, después $7/mes)
 
 ### 2.3 Guardar credenciales
 Render generará:
 - **Internal Database URL**: Úsala para conectar servicios dentro de Render
 - **External Database URL**: Para conectarte desde tu computadora
-- **Username**: root
+- **Username**: taller_db_user
 - **Password**: [generado automáticamente]
 - **Host**: [hostname interno]
-- **Port**: 3306
+- **Port**: 5432
 
 ⚠️ **IMPORTANTE**: Guarda la **Internal Database URL** - la necesitarás después.
+📝 Formato: `postgresql://user:password@host:5432/dbname`
 
 ---
 
@@ -77,27 +78,27 @@ PORT=5000
 # Entorno
 NODE_ENV=production
 
-# Base de datos (usar valores de tu MySQL creado en Paso 2)
-DB_HOST=<hostname-interno-de-tu-mysql>
-DB_PORT=3306
-DB_USER=root
+# Base de datos (usar valores de tu PostgreSQL creado en Paso 2)
+DB_HOST=<hostname-interno-de-tu-postgres>
+DB_PORT=5432
+DB_USER=taller_db_user
 DB_PASSWORD=<password-generado-automáticamente>
 DB_NAME=taller_db
 
 # DATABASE_URL completa
-DATABASE_URL=mysql://root:<password>@<hostname-interno>:3306/taller_db
+DATABASE_URL=postgresql://taller_db_user:<password>@<hostname-interno>:5432/taller_db?schema=public
 
 # Opcional: Si usas Gemini AI
 GEMINI_API_KEY=<tu-api-key>
 ```
 
 ### 📝 Cómo obtener los valores de la BD:
-1. Ve a tu servicio MySQL en Render
+1. Ve a tu servicio PostgreSQL en Render
 2. Click en la pestaña **"Connect"**
 3. Copia el **Internal Database URL**
 4. Extrae los valores:
-   - `mysql://USER:PASSWORD@HOST:PORT/DATABASE`
-   - **USER** → `DB_USER`
+   - `postgresql://USER:PASSWORD@HOST:PORT/DATABASE`
+   - **USER** → `DB_USER` (generalmente `taller_db_user`)
    - **PASSWORD** → `DB_PASSWORD`
    - **HOST** → `DB_HOST`
    - **DATABASE** → `DB_NAME`
@@ -196,10 +197,13 @@ render logs -s taller-app
 ### Conectar a la Base de Datos
 ```bash
 # Desde tu computadora (External URL)
-mysql -h <external-host> -P <external-port> -u root -p<password> taller_db
+psql <external-database-url>
+
+# O manualmente:
+psql -h <external-host> -p <external-port> -U taller_db_user -d taller_db
 
 # Ver tablas
-SHOW TABLES;
+\dt
 ```
 
 ### Ejecutar Migraciones Manualmente (si es necesario)
@@ -216,19 +220,19 @@ npx prisma db push
 
 ## 📊 Costos Aproximados
 
-### Opción 1: Free Tier
-- **Web Service**: $0 (750 horas/mes)
-- **MySQL**: No disponible en free tier
-- **Total**: Necesitas pagar MySQL al menos
+### Opción 1: Free Tier (90 días)
+- **Web Service**: $0 (con límites)
+- **PostgreSQL**: $0 (90 días gratis, después $7/mes)
+- **Total**: Gratis por 90 días
 
-### Opción 2: Starter
+### Opción 2: Starter (Recomendado para producción)
 - **Web Service**: $7/mes (512MB RAM)
-- **MySQL**: $7/mes (1GB storage)
+- **PostgreSQL**: $7/mes (1GB storage, 1M rows)
 - **Total**: ~$14/mes
 
-### Opción 3: Alternativa (MySQL Externo)
+### Opción 3: Solo Web Service
 - **Web Service en Render**: $7/mes
-- **MySQL en PlanetScale**: Free tier (5GB)
+- **PostgreSQL externo (Railway, Supabase)**: Free tier disponible
 - **Total**: $7/mes
 
 ---
